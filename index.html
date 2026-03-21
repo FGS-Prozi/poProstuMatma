@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Po Prostu Matma...</title>
+  <link rel="stylesheet" href="./style.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo">∓</div>
+          <div>
+            <h1>Moduł treningowy</h1>
+            <p>Zadania z matematyki z poszczególnych działów.</p>
+          </div>
+        </div>
+        <div class="timer-pill" id="globalTimer">Czas: 15:00</div>
+      </div>
+
+      <div class="content">
+        <!-- HUB SCREEN -->
+<section class="screen active" id="hubScreen">
+  <div class="panel">
+    <h2 class="headline">Wybierz moduł treningowy</h2>
+    <p class="lead">
+      Kliknij kafelek, wejdź w ustawienia, wybierz preferencje i zacznij ćwiczyć.
+    </p>
+
+    <div class="hub-grid">
+      <button class="hub-card" data-trainer="negative">
+        <div class="tag">Dostępne</div>
+        <h3>Liczby ujemne</h3>
+        <p>Minusy, nawiasy, znaki obok siebie i proste działania z liczbami ujemnymi.</p>
+      </button>
+
+      <button class="hub-card" data-trainer="multiplication">
+        <div class="tag">Dostępne</div>
+        <h3>Tabliczka mnożenia</h3>
+        <p>Szybkie ćwiczenia z mnożeniem w stylu tabliczki, z rosnącą trudnością.</p>
+      </button>
+
+      <button class="hub-card" data-trainer="fractions">
+        <div class="tag">Dostępne</div>
+        <h3>Ułamki</h3>
+        <p>Dodawanie, odejmowanie, mnożenie i dzielenie ułamków zwykłych, niewłaściwych i mieszanych.</p>
+      </button>
+
+      <button class="hub-card disabled" disabled>
+        <div class="tag">Wkrótce</div>
+        <h3>Równania</h3>
+        <p>Planowany moduł do prostych równań i przekształceń.</p>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS SCREEN -->
+<section class="screen" id="settingsScreen">
+  <div class="panel">
+    <div class="results-head">
+      <div>
+        <h2 class="headline" id="trainerTitle" style="margin-bottom: 6px;">Trener liczb ujemnych</h2>
+        <p class="lead" id="trainerSubtitle" style="margin-bottom: 0;">
+          Zadania z minusami, nawiasami i znakami obok siebie.
+        </p>
+      </div>
+      <button class="secondary-btn" id="backToHubBtn">← Powrót do HUB-a</button>
+    </div>
+
+    <div class="settings-grid">
+      <div class="mini-card">
+        <strong>Wybierz tryb trudności:</strong>
+        <div class="mode-grid">
+          <button class="mode-btn" data-mode="easy">Łatwy</button>
+          <button class="mode-btn medium" data-mode="medium">Średni</button>
+          <button class="mode-btn hard" data-mode="hard">Trudny</button>
+        </div>
+        <div class="status-text" id="selectedModeText">Wybrany tryb: łatwy</div>
+      </div>
+
+      <div class="mini-card">
+        <strong>Opcje dodatkowe:</strong>
+        <div class="settings-note">
+          Możesz włączyć tryb bez limitu czasu albo zostać przy klasycznym 10-minutowym treningu.
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <button class="action-btn" id="startBtn" style="min-width: 180px;">Start</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+        <!-- QUIZ SCREEN -->
+        <section class="screen" id="quizScreen">
+          <div class="quiz-layout">
+            <div class="panel quiz-card">
+              <div class="status-row">
+                <div class="status-group">
+                  <div class="badge" id="modeBadge">Tryb: łatwy</div>
+                  <div class="badge" id="levelBadge">Poziom: 1</div>
+                  <div class="badge" id="scoreBadge">Wynik: 0</div>
+                </div>
+                <div class="badge" id="streakBadge">Seria: 0</div>
+              </div>
+
+              <div class="question-wrap">
+                <div>
+                  <div class="question-label">Rozwiąż zadanie</div>
+                  <p class="question" id="questionText">-3 - 10</p>
+                </div>
+              </div>
+
+              <div class="answer-row">
+                <input class="answer-input" id="answerInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Wpisz odpowiedź i naciśnij Enter" />
+                <button class="action-btn" id="submitBtn">Sprawdź</button>
+              </div>
+
+              <div class="answer-row">
+                <button class="secondary-btn" id="skipBtn" title="Pomiń bez liczenia">Pomiń</button>
+                <button class="secondary-btn" id="endBtn" title="Zakończ wcześniej">Zakończ</button>
+              </div>
+
+              <div class="helper">
+                Zadania zapisują się automatycznie. Po zakończeniu pojawi się pełna lista odpowiedzi z oceną każdego zadania.
+              </div>
+            </div>
+
+            <div class="sidebar">
+              <div class="metric">
+                <div class="title">Pozostały czas</div>
+                <div class="value" id="timeLeftText">15:00</div>
+                <div class="progress"><div id="timeProgress"></div></div>
+              </div>
+              <div class="metric">
+                <div class="title">Aktualna trudność</div>
+                <div class="value" id="difficultyText">Łatwy</div>
+              </div>
+              <div class="metric">
+                <div class="title">Wskazówka</div>
+                <div class="value" style="font-size: 1.02rem; font-weight: 700; line-height: 1.5; color:#dbeafe;">
+                  Uważaj na dwa minusy obok siebie i na nawiasy przy liczbach ujemnych.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RESULTS SCREEN -->
+        <section class="screen" id="resultsScreen">
+          <div class="panel">
+            <div class="results-head">
+              <div>
+                <h2 class="headline" style="margin-bottom: 6px;">Koniec czasu</h2>
+                <p class="lead" style="margin-bottom: 0;">Poniżej masz zapis wszystkich odpowiedzi w kolejności, w jakiej zostały wpisane.</p>
+              </div>
+              <div class="badge" id="finalModeBadge">Tryb: łatwy</div>
+            </div>
+
+            <div class="summary-box">
+              <div class="summary-stat">
+                <div class="label">Wynik</div>
+                <div class="num" id="finalScore">0</div>
+              </div>
+              <div class="summary-stat">
+                <div class="label">Poprawne</div>
+                <div class="num" id="finalCorrect">0</div>
+              </div>
+              <div class="summary-stat">
+                <div class="label">Wszystkie odpowiedzi</div>
+                <div class="num" id="finalTotal">0</div>
+              </div>
+            </div>
+
+            <div class="answers-list" id="answersList"></div>
+
+            <div class="results-actions">
+              <button class="action-btn" id="retryBtn">Spróbuj jeszcze raz</button>
+              <button class="secondary-btn" id="backHomeBtn">Powrót</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
