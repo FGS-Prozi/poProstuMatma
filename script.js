@@ -3,6 +3,7 @@ let TOTAL_TIME = 15 * 60;
 const state = {
   selectedTrainer: 'negative',
   noTimeMode: false,
+  musicEnabled: true,
   mode: 'easy',
   running: false,
   finished: false,
@@ -46,7 +47,8 @@ const els = {
   retryBtn: document.getElementById('retryBtn'),
   backHomeBtn: document.getElementById('backHomeBtn'),
   backToHubBtn: document.getElementById('backToHubBtn'),
-  startBtn: document.getElementById('startBtn')
+  startBtn: document.getElementById('startBtn'),
+  musicToggle: document.getElementById('musicToggle')
 };
 
 const trainerConfig = {
@@ -61,10 +63,23 @@ const trainerConfig = {
   fractions: {
     title: 'Trener ułamków',
     subtitle: 'Działania na ułamkach zwykłych, niewłaściwych i mieszanych.'
+  },
+  equations: {
+    title: 'Trener równań',
+    subtitle: 'Rozwiązuj proste równania z jedną niewiadomą x.'
   }
 };
 
-    const difficultyNames = ['Łatwy', 'Średni', 'Trudny'];
+const difficultyNames = ['Łatwy', 'Średni', 'Trudny'];
+
+const correctSound = new Audio('./assets/soundEffects/correctAns.mp3');
+const wrongSound = new Audio('./assets/soundEffects/wrongAns.mp3');
+const backgroundMusic = new Audio('./assets/music/bgMusic.mp3');
+
+correctSound.volume = 0.2;
+wrongSound.volume = 1;
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.05;
 
 function showScreen(name) {
   [els.hubScreen, els.settingsScreen, els.quizScreen, els.resultsScreen].forEach(el => el.classList.remove('active'));
@@ -87,19 +102,19 @@ function renderTrainerSettings() {
   els.trainerSubtitle.textContent = cfg.subtitle;
 }
 
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
-    function randInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-    function pick(arr) {
-      return arr[randInt(0, arr.length - 1)];
-    }
+function pick(arr) {
+  return arr[randInt(0, arr.length - 1)];
+}
 
 function gcd(a, b) {
   a = Math.abs(a);
@@ -173,7 +188,7 @@ function fractionToTex(fr, style = 'proper') {
 
 function formatFractionOperandTex(fr, op, style) {
   const tex = fractionToTex(fr, style);
-  const needsParens = tex.startsWith('-') || tex.includes('\\frac') && style === 'mixed';
+  const needsParens = tex.startsWith('-') || (tex.includes('\\frac') && style === 'mixed');
 
   if (op === '×' || op === '÷') {
     return needsParens ? `(${tex})` : tex;
@@ -282,10 +297,10 @@ function getMultiplicationLimit(level) {
   if (state.mode === 'medium') {
     if (level <= 2) return 7;
     if (level <= 4) return 10;
-    return 15; // edycja max poziomu
+    return 15;
   }
 
-  return 20; // edycja max poziomu
+  return 20;
 }
 
 function makeMultiplicationExpression(limit) {
@@ -308,33 +323,50 @@ function getDifficultyLabel(level) {
   return level >= 3 ? 'Średni' : 'Łatwy';
 }
 
+function calculateLevel() {
+  const base = state.mode === 'easy' ? 1 : state.mode === 'medium' ? 2 : 3;
+  return Math.min(6, base + Math.floor(state.correctCount / 4) + Math.floor(state.streak / 3));
+}
 
-    function calculateLevel() {
-      const base = state.mode === 'easy' ? 1 : state.mode === 'medium' ? 2 : 3;
-      return Math.min(6, base + Math.floor(state.correctCount / 4) + Math.floor(state.streak / 3));
-    }
+function randomOperand(limit) {
+  const n = randInt(-limit, limit);
+  return n === 0 ? limit : n;
+}
 
-    function randomOperand(limit) {
-      const n = randInt(-limit, limit);
-      return n === 0 ? limit : n;
-    }
+function wrapIfNegative(value) {
+  const text = String(value).trim();
 
-    function wrapIfNegative(value) {
-      const text = String(value);
-      return text.startsWith('-') ? `(${text})` : text;
-    }
+  if (/^\(+\s*-\d+\s*\)+$/.test(text)) {
+    const num = text.match(/-?\d+/)?.[0];
+    return num ? `(${num})` : text;
+  }
 
-    function formatBinaryExpression(a, op, b) {
-      return `${wrapIfNegative(a)} ${op} ${wrapIfNegative(b)}`;
-    }
+  if (/^\(-?\d+\)$/.test(text)) {
+    return text;
+  }
 
-    function makeSimpleExpression(limit) {
-      const a = randomOperand(limit);
-      const b = randomOperand(limit);
-      const op = pick(['+', '-']);
-      const expr = formatBinaryExpression(a, op, b);
-      return { expr, answer: op === '+' ? a + b : a - b };
-    }
+  if (text.startsWith('-')) {
+    return `(${text})`;
+  }
+
+  return text;
+}
+
+function rawValue(value) {
+  return String(value).trim();
+}
+
+function formatBinaryExpression(a, op, b) {
+  return `${wrapIfNegative(a)} ${op} ${wrapIfNegative(b)}`;
+}
+
+function makeSimpleExpression(limit) {
+  const a = randomOperand(limit);
+  const b = randomOperand(limit);
+  const op = pick(['+', '-']);
+  const expr = formatBinaryExpression(a, op, b);
+  return { expr, answer: op === '+' ? a + b : a - b };
+}
 
 function makeParenExpression(limit) {
   const a = randomOperand(limit);
@@ -364,7 +396,7 @@ function makeParenExpression(limit) {
 
   const op1 = pick(['+', '-']);
   const op2 = pick(['+', '-']);
-  const left = `${wrapIfNegative(a)} ${op1} (${wrapIfNegative(b)})`;
+  const left = `${wrapIfNegative(a)} ${op1} (${rawValue(b)})`;
   return {
     expr: `${left} ${op2} ${wrapIfNegative(c)}`,
     answer: (op1 === '+' ? a + b : a - b) + (op2 === '+' ? c : -c)
@@ -392,7 +424,7 @@ function makeAdvancedExpression(limit) {
   if (pattern === 'doubleMinus') {
     const tailOp = pick(['+', '-']);
     const tailValue = tailOp === '+' ? d : -d;
-    const expr = `${wrapIfNegative(a)} - (${wrapIfNegative(b)} - ${wrapIfNegative(c)}) ${tailOp} ${wrapIfNegative(d)}`;
+    const expr = `${wrapIfNegative(a)} - (${rawValue(b)} - ${rawValue(c)}) ${tailOp} ${wrapIfNegative(d)}`;
     return { expr, answer: a - (b - c) + tailValue };
   }
 
@@ -406,12 +438,75 @@ function makeAdvancedExpression(limit) {
   return { expr, answer: ans };
 }
 
+function getEquationDifficultyLabel(level) {
+  if (state.mode === 'easy') {
+    return level <= 2 ? 'Równania proste' : 'Równania z 2 krokami';
+  }
+
+  if (state.mode === 'medium') {
+    return level <= 2 ? 'Równania z nawiasem' : 'Równania 2-krokowe';
+  }
+
+  return level <= 2 ? 'Równania trudniejsze' : 'Równania mieszane';
+}
+
+function eqTerm(n) {
+  return n < 0 ? `(${n})` : `${n}`;
+}
+
+function makeEquationQuestion(level) {
+  const pattern = pick(['add', 'sub', 'mul', 'div', 'mulAdd', 'mulSub']);
+
+  let expr = '';
+  let answer = 0;
+
+  if (pattern === 'add') {
+    const xValue = randInt(-12, 12) || 5;
+    const a = randInt(1, 20);
+    expr = `x + ${eqTerm(a)} = ${xValue + a}`;
+    answer = xValue;
+  } else if (pattern === 'sub') {
+    const xValue = randInt(-12, 12) || 5;
+    const a = randInt(1, 20);
+    expr = `x - ${eqTerm(a)} = ${xValue - a}`;
+    answer = xValue;
+  } else if (pattern === 'mul') {
+    const xValue = randInt(-12, 12) || 5;
+    const a = randInt(2, 12);
+    expr = `${a}x = ${a * xValue}`;
+    answer = xValue;
+  } else if (pattern === 'div') {
+    const rhs = randInt(-12, 12) || 4;
+    const a = randInt(2, 12);
+    expr = `x ÷ ${a} = ${rhs}`;
+    answer = rhs * a;
+  } else if (pattern === 'mulAdd') {
+    const xValue = randInt(-12, 12) || 5;
+    const a = randInt(2, 9);
+    const b = randInt(-10, 10);
+    expr = `${a}x + ${eqTerm(b)} = ${a * xValue + b}`;
+    answer = xValue;
+  } else {
+    const xValue = randInt(-12, 12) || 5;
+    const a = randInt(2, 9);
+    const b = randInt(-10, 10);
+    expr = `${a}x - ${eqTerm(b)} = ${a * xValue - b}`;
+    answer = xValue;
+  }
+
+  return {
+    expr: `\\(${expr}\\)`,
+    answer
+  };
+}
+
 function fitQuestionText() {
   const el = els.questionText;
   const wrap = el.closest('.question-wrap');
   if (!wrap) return;
 
   el.style.fontSize = '64px';
+  el.style.whiteSpace = 'nowrap';
 
   const maxWidth = wrap.clientWidth - 32;
   let fontSize = 64;
@@ -420,6 +515,39 @@ function fitQuestionText() {
     fontSize -= 2;
     el.style.fontSize = fontSize + 'px';
   }
+}
+
+function updateMusicButton() {
+  if (!els.musicToggle) return;
+  els.musicToggle.textContent = state.musicEnabled ? '🔊' : '🔇';
+  els.musicToggle.title = state.musicEnabled ? 'Wycisz muzykę' : 'Włącz muzykę';
+}
+
+function startBackgroundMusic() {
+  if (!state.musicEnabled) return;
+  backgroundMusic.play().catch(() => {});
+}
+
+function stopBackgroundMusic() {
+  backgroundMusic.pause();
+  backgroundMusic.currentTime = 0;
+}
+
+function toggleMusic() {
+  state.musicEnabled = !state.musicEnabled;
+  updateMusicButton();
+
+  if (state.musicEnabled && state.running && !state.finished) {
+    startBackgroundMusic();
+  } else {
+    stopBackgroundMusic();
+  }
+}
+
+function playSound(type) {
+  const sound = type === 'correct' ? correctSound : wrongSound;
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
 }
 
 function generateQuestion() {
@@ -435,6 +563,10 @@ function generateQuestion() {
     q = makeFractionQuestion(level);
     els.answerInput.placeholder = 'Np. 3/4, 1 1/2, -2/3';
     els.answerInput.inputMode = 'text';
+  } else if (state.selectedTrainer === 'equations') {
+    q = makeEquationQuestion(level);
+    els.answerInput.placeholder = 'Wpisz wartość x';
+    els.answerInput.inputMode = 'numeric';
   } else {
     const maxAbs = state.mode === 'easy' ? 10 : state.mode === 'medium' ? 20 : 30;
 
@@ -450,22 +582,24 @@ function generateQuestion() {
     els.answerInput.inputMode = 'numeric';
   }
 
-state.current = q;
-els.questionText.innerHTML = q.expr;
+  state.current = q;
+  els.questionText.innerHTML = q.expr;
 
-if (window.MathJax?.typesetPromise) {
-  MathJax.typesetClear?.([els.questionText]);
-  MathJax.typesetPromise([els.questionText]).then(() => {
+  if (window.MathJax?.typesetPromise) {
+    MathJax.typesetClear?.([els.questionText]);
+    MathJax.typesetPromise([els.questionText]).then(() => {
+      fitQuestionText();
+    });
+  } else {
     fitQuestionText();
-  });
-} else {
-  fitQuestionText();
-}
+  }
 
   els.levelBadge.textContent = `Poziom: ${level}`;
 
   if (state.selectedTrainer === 'fractions') {
     els.difficultyText.textContent = getFractionDifficultyLabel(level);
+  } else if (state.selectedTrainer === 'equations') {
+    els.difficultyText.textContent = getEquationDifficultyLabel(level);
   } else {
     els.difficultyText.textContent = getDifficultyLabel(level);
   }
@@ -481,16 +615,16 @@ function setMode(mode) {
   updateBadges();
 }
 
-    function updateBadges() {
-      const modeLabel = state.mode === 'easy' ? 'łatwy' : state.mode === 'medium' ? 'średni' : 'trudny';
-      els.modeBadge.textContent = `Tryb: ${modeLabel}`;
-      els.finalModeBadge.textContent = `Tryb: ${modeLabel}`;
-      els.scoreBadge.textContent = `Wynik: ${state.score}`;
-      els.streakBadge.textContent = `Seria: ${state.streak}`;
-      els.finalScore.textContent = state.score;
-      els.finalCorrect.textContent = state.correctCount;
-      els.finalTotal.textContent = state.history.length;
-    }
+function updateBadges() {
+  const modeLabel = state.mode === 'easy' ? 'łatwy' : state.mode === 'medium' ? 'średni' : 'trudny';
+  els.modeBadge.textContent = `Tryb: ${modeLabel}`;
+  els.finalModeBadge.textContent = `Tryb: ${modeLabel}`;
+  els.scoreBadge.textContent = `Wynik: ${state.score}`;
+  els.streakBadge.textContent = `Seria: ${state.streak}`;
+  els.finalScore.textContent = state.score;
+  els.finalCorrect.textContent = state.correctCount;
+  els.finalTotal.textContent = state.history.length;
+}
 
 function updateTimerUI() {
   if (state.noTimeMode) {
@@ -521,6 +655,7 @@ function startGame() {
   updateBadges();
   updateTimerUI();
   showScreen('quiz');
+  startBackgroundMusic();
   generateQuestion();
 
   clearInterval(state.timerId);
@@ -582,6 +717,10 @@ function registerAnswer(raw, skipped = false) {
     index: state.answerCount
   });
 
+  if (!skipped) {
+    playSound(isCorrect ? 'correct' : 'wrong');
+  }
+
   updateBadges();
   generateQuestion();
 }
@@ -608,132 +747,92 @@ function renderResults() {
   updateBadges();
 }
 
-    function endGame() {
-      if (state.finished) return;
-      state.finished = true;
-      state.running = false;
-      clearInterval(state.timerId);
-      state.timerId = null;
-      renderResults();
-      showScreen('results');
-    }
+function updatePercentage() {
+  const percent = state.history.length
+    ? Math.round((state.correctCount / state.history.length) * 100)
+    : 0;
+  els.finalScore.textContent = `${state.score} (${percent}%)`;
+}
 
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
+function endGame() {
+  if (state.finished) return;
+  state.finished = true;
+  state.running = false;
+  clearInterval(state.timerId);
+  state.timerId = null;
+  stopBackgroundMusic();
+  renderResults();
+  updatePercentage();
+  showScreen('results');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
 document.querySelectorAll('.hub-card[data-trainer]').forEach(card => {
   card.addEventListener('click', () => openTrainer(card.dataset.trainer));
 });
 
 els.backToHubBtn.addEventListener('click', () => {
+  stopBackgroundMusic();
   showScreen('hub');
 });
 
-    document.querySelectorAll('.mode-btn').forEach(btn => {
-      btn.addEventListener('click', () => setMode(btn.dataset.mode));
-    });
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
 
-    els.submitBtn.addEventListener('click', () => {
-      const value = els.answerInput.value.trim();
-      if (value === '') return;
-      registerAnswer(value);
-    });
+els.submitBtn.addEventListener('click', () => {
+  const value = els.answerInput.value.trim();
+  if (value === '') return;
+  registerAnswer(value);
+});
 
-    els.answerInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const value = els.answerInput.value.trim();
-        if (value !== '') registerAnswer(value);
-      }
-    });
+els.answerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const value = els.answerInput.value.trim();
+    if (value !== '') registerAnswer(value);
+  }
+});
 
-    els.skipBtn.addEventListener('click', () => {
-      registerAnswer('', true);
-    });
+els.skipBtn.addEventListener('click', () => {
+  registerAnswer('', true);
+});
 
-    els.endBtn.addEventListener('click', endGame);
+els.endBtn.addEventListener('click', endGame);
 
-    els.retryBtn.addEventListener('click', () => startGame());
+els.retryBtn.addEventListener('click', () => startGame());
 
-    const startBtn = document.getElementById('startBtn');
+els.startBtn.addEventListener('click', startGame);
 
-    startBtn.addEventListener('click', startGame);
+els.backHomeBtn.addEventListener('click', () => {
+  clearInterval(state.timerId);
+  state.timerId = null;
+  state.running = false;
+  state.finished = false;
+  state.history = [];
+  state.score = 0;
+  state.streak = 0;
+  state.correctCount = 0;
+  state.answerCount = 0;
+  state.timeLeft = TOTAL_TIME;
+  stopBackgroundMusic();
+  updateTimerUI();
+  updateBadges();
+  showScreen('hub');
+});
 
-    els.backHomeBtn.addEventListener('click', () => {
-      clearInterval(state.timerId);
-      state.timerId = null;
-      state.running = false;
-      state.finished = false;
-      state.history = [];
-      state.score = 0;
-      state.streak = 0;
-      state.correctCount = 0;
-      state.answerCount = 0;
-      state.timeLeft = TOTAL_TIME;
-      updateTimerUI();
-      updateBadges();
-      showScreen('hub');
-    });
+if (els.musicToggle) {
+  els.musicToggle.addEventListener('click', toggleMusic);
+  updateMusicButton();
+}
 
-    // Initialization
-    renderTrainerSettings();
-setMode('easy');
-updateTimerUI();
-showScreen('hub');
-      // --- EXTRA FEATURES ---
-
-    function playSound(type) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      if (type === 'correct') {
-        osc.frequency.value = 600;
-      } else {
-        osc.frequency.value = 200;
-      }
-
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    }
-
-    // override registerAnswer to include sound
-    const originalRegister = registerAnswer;
-    registerAnswer = function(raw, skipped = false) {
-      const prevCorrect = state.correctCount;
-      originalRegister(raw, skipped);
-
-      const last = state.history[state.history.length - 1];
-      if (!skipped) {
-        playSound(last.isCorrect ? 'correct' : 'wrong');
-      }
-    };
-
-    // --- PERCENT SCORE ---
-    function updatePercentage() {
-      const percent = state.history.length
-        ? Math.round((state.correctCount / state.history.length) * 100)
-        : 0;
-      els.finalScore.textContent = `${state.score} (${percent}%)`;
-    }
-
-    const originalRender = renderResults;
-    renderResults = function() {
-      originalRender();
-      updatePercentage();
-    };
-
-// --- NO TIME MODE ---
 const noTimeBtn = document.createElement('button');
 noTimeBtn.textContent = 'Tryb bez limitu czasu';
 noTimeBtn.className = 'secondary-btn';
@@ -747,22 +846,9 @@ noTimeBtn.addEventListener('click', () => {
   updateTimerUI();
 });
 
-    // --- EXPORT PDF ---
-function getModeLabel() {
-  return state.mode === 'easy'
-    ? 'Łatwy'
-    : state.mode === 'medium'
-      ? 'Średni'
-      : 'Trudny';
-}
-
-function getExportTitle() {
-  return trainerConfig[state.selectedTrainer]?.title || 'Moduł treningowy';
-}
-
 function exportPDF() {
-  const moduleTitle = getExportTitle();
-  const modeLabel = getModeLabel();
+  const moduleTitle = trainerConfig[state.selectedTrainer]?.title || 'Moduł treningowy';
+  const modeLabel = state.mode === 'easy' ? 'Łatwy' : state.mode === 'medium' ? 'Średni' : 'Trudny';
 
   const win = window.open('', '_blank');
   const rows = state.history.map((h, i) => `
@@ -836,13 +922,23 @@ function exportPDF() {
   win.document.close();
 }
 
-    const pdfBtn = document.createElement('button');
-    pdfBtn.textContent = 'Eksport do PDF';
-    pdfBtn.className = 'secondary-btn';
-    els.resultsScreen.querySelector('.results-actions').appendChild(pdfBtn);
+const pdfBtn = document.createElement('button');
+pdfBtn.textContent = 'Eksport do PDF';
+pdfBtn.className = 'secondary-btn';
+els.resultsScreen.querySelector('.results-actions').appendChild(pdfBtn);
 
-    pdfBtn.addEventListener('click', exportPDF);
+pdfBtn.addEventListener('click', exportPDF);
 
-    window.addEventListener('resize', () => {
-      if (state.current) fitQuestionText();
-    });
+function init() {
+  renderTrainerSettings();
+  setMode('easy');
+  updateMusicButton();
+  updateTimerUI();
+  showScreen('hub');
+}
+
+window.addEventListener('resize', () => {
+  if (state.current) fitQuestionText();
+});
+
+init();

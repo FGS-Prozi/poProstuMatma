@@ -63,7 +63,7 @@
       gap: 12px;
     }
 
-    .logo {
+    .logo img {
       width: 46px;
       height: 46px;
       border-radius: 16px;
@@ -207,12 +207,12 @@
 
     .mini-card strong { color: #fff; }
 
-    .quiz-layout {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 18px;
-      align-items: stretch;
-    }
+.quiz-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px;
+  align-items: stretch;
+}
 
     .quiz-card {
       display: flex;
@@ -220,6 +220,12 @@
       gap: 18px;
       min-height: 420px;
     }
+
+.quiz-card,
+.sidebar,
+.question-wrap {
+  min-width: 0;
+}
 
     .status-row {
       display: flex;
@@ -248,17 +254,19 @@
       font-weight: 600;
     }
 
-    .question-wrap {
-      flex: 1;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 28px 16px;
-      border-radius: 24px;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.65), rgba(17, 24, 39, 0.55));
-      border: 1px solid rgba(255,255,255,0.08);
-      overflow: hidden;
-    }
+.question-wrap {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 28px 16px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.65), rgba(17, 24, 39, 0.55));
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+}
 
     .question-label {
       color: var(--muted);
@@ -268,16 +276,17 @@
       text-transform: uppercase;
     }
 
-    .question {
-      margin: 0;
-      font-size: 64px;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.05;
-      white-space: nowrap;
-      display: inline-block;
-      max-width: 100%;
-    }
+.question {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+}
 
     .answer-row {
       display: flex;
@@ -517,4 +526,23 @@
   .hub-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.sound-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.sound-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.1);
 }

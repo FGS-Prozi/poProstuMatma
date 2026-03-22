@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Po Prostu Matma...</title>
+  <title>Po Prostu Matma</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="icon" type="image/x-icon" href="./assets/favicon/favicon.ico">
+
   <script>
     window.MathJax = {
       tex: {
@@ -20,13 +22,14 @@
     <div class="shell">
       <div class="topbar">
         <div class="brand">
-          <div class="logo">∓</div>
+          <div class="logo"><img src="./assets/favicon/android-chrome-512x512.png" alt=""></div>
           <div>
             <h1>Moduł treningowy</h1>
             <p>Zadania z matematyki z poszczególnych działów.</p>
           </div>
         </div>
         <div class="timer-pill" id="globalTimer">Czas: 15:00</div>
+        <button class="sound-btn" id="musicToggle" type="button" title="Wycisz muzykę">🔊</button>
       </div>
 
       <div class="content">
@@ -57,10 +60,10 @@
         <p>Dodawanie, odejmowanie, mnożenie i dzielenie ułamków zwykłych, niewłaściwych i mieszanych.</p>
       </button>
 
-      <button class="hub-card disabled" disabled>
-        <div class="tag">Wkrótce</div>
+      <button class="hub-card" data-trainer="equations">
+        <div class="tag">Dostępne</div>
         <h3>Równania</h3>
-        <p>Planowany moduł do prostych równań i przekształceń.</p>
+        <p>Proste równania z jedną niewiadomą: dodawanie, odejmowanie, mnożenie i dzielenie.</p>
       </button>
     </div>
   </div>
@@ -93,12 +96,12 @@
       <div class="mini-card">
         <strong>Opcje dodatkowe:</strong>
         <div class="settings-note">
-          Możesz włączyć tryb bez limitu czasu albo zostać przy klasycznym 10-minutowym treningu.
+          Możesz włączyć tryb bez limitu czasu albo zostać przy klasycznym 15-minutowym treningu.
         </div>
       </div>
 
       <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-        <button class="action-btn" id="startBtn" style="min-width: 180px;">Start</button>
+        <button class="action-btn" id="startBtn" style="min-width: 180px;">Start</input></button>
       </div>
     </div>
   </div>
@@ -126,10 +129,10 @@
 
               <div class="answer-row">
                 <input class="answer-input" id="answerInput" type="text" inputmode="numeric" autocomplete="off" placeholder="Wpisz odpowiedź i naciśnij Enter" />
-                <button class="action-btn" id="submitBtn">Sprawdź</button>
               </div>
 
               <div class="answer-row">
+                <button class="action-btn" id="submitBtn">Sprawdź</button>
                 <button class="secondary-btn" id="skipBtn" title="Pomiń bez liczenia">Pomiń</button>
                 <button class="secondary-btn" id="endBtn" title="Zakończ wcześniej">Zakończ</button>
               </div>
