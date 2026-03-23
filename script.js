@@ -725,19 +725,43 @@ function registerAnswer(raw, skipped = false) {
   generateQuestion();
 }
 
+function typesetMath(scope) {
+  if (!window.MathJax?.typesetPromise) return Promise.resolve();
+  MathJax.typesetClear?.([scope]);
+  return MathJax.typesetPromise([scope]).catch(() => {});
+}
+
+function answerToTex(value) {
+  if (state.selectedTrainer === 'fractions') {
+    const fr = parseFractionInput(value);
+    if (!fr) return value;
+    return `\\(${fractionToTex(fr, 'mixed')}\\)`;
+  }
+
+  return `\\(${value}\\)`;
+}
+
 function renderResults() {
   els.answersList.innerHTML = '';
+
   state.history.forEach((item, idx) => {
     const div = document.createElement('div');
     div.className = `answer-item ${item.isCorrect ? 'correct' : 'wrong'}`;
+
     div.innerHTML = `
-      <div class="expr">${idx + 1}. ${escapeHtml(item.expr)}</div>
+      <div class="expr">${idx + 1}. <span class="math-tex">${escapeHtml(item.expr)}</span></div>
       <div class="details">
-        Twoja odpowiedź: <strong>${escapeHtml(String(item.userAnswerText ?? item.userAnswer))}</strong><br>
-        Poprawna odpowiedź: <strong>${escapeHtml(String(item.correctAnswerText ?? item.correctAnswer))}</strong>
+        Twoja odpowiedź: <strong class="math-tex">
+          ${item.skipped ? 'Pominięte' : answerToTex(item.userAnswerText ?? item.userAnswer)}
+        </strong><br>
+
+        Poprawna odpowiedź: <strong class="math-tex">
+          ${answerToTex(item.correctAnswerText ?? item.correctAnswer)}
+        </strong>
         ${item.isCorrect ? '<br><small>Poprawnie</small>' : '<br><small>Błąd</small>'}
       </div>
     `;
+
     els.answersList.appendChild(div);
   });
 
@@ -745,6 +769,8 @@ function renderResults() {
   els.finalCorrect.textContent = state.correctCount;
   els.finalTotal.textContent = state.history.length;
   updateBadges();
+
+  typesetMath(els.answersList);
 }
 
 function updatePercentage() {
@@ -773,6 +799,29 @@ function escapeHtml(str) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function ensureInlineMath(tex) {
+  const text = String(tex ?? '').trim();
+  if (!text) return '';
+  if (text.startsWith('\\(') && text.endsWith('\\)')) return text;
+  return `\\(${text}\\)`;
+}
+
+function valueForPrint(value) {
+  const text = String(value ?? '').trim();
+
+  if (!text) return '';
+  if (text === 'Pominięte') return text;
+
+  if (state.selectedTrainer === 'fractions') {
+    const fr = parseFractionInput(text);
+    if (fr) {
+      return ensureInlineMath(fractionToTex(fr, 'mixed'));
+    }
+  }
+
+  return ensureInlineMath(text);
 }
 
 document.querySelectorAll('.hub-card[data-trainer]').forEach(card => {
@@ -851,54 +900,82 @@ function exportPDF() {
   const modeLabel = state.mode === 'easy' ? 'Łatwy' : state.mode === 'medium' ? 'Średni' : 'Trudny';
 
   const win = window.open('', '_blank');
+  if (!win) return;
+
   const rows = state.history.map((h, i) => `
     <tr style="background:${h.isCorrect ? '#d1fae5' : '#fee2e2'}">
       <td>${i + 1}</td>
-      <td>${h.expr}</td>
-      <td>${h.userAnswerText ?? h.userAnswer}</td>
-      <td>${h.correctAnswerText ?? h.correctAnswer}</td>
+      <td><span class="math-cell">${h.expr}</span></td>
+      <td>
+        ${
+          h.skipped
+            ? 'Pominięte'
+            : `<span class="math-cell">${valueForPrint(h.userAnswerText ?? h.userAnswer)}</span>`
+        }
+      </td>
+      <td><span class="math-cell">${valueForPrint(h.correctAnswerText ?? h.correctAnswer)}</span></td>
     </tr>
   `).join('');
 
   win.document.write(`
     <html>
     <head>
-      <title>${moduleTitle} — wyniki</title>
+      <title>${escapeHtml(moduleTitle)} — wyniki</title>
+      <meta charset="UTF-8" />
       <style>
         body {
           font-family: Arial, sans-serif;
           padding: 24px;
           color: #111827;
         }
+
         h1 {
           margin: 0 0 8px;
         }
+
         .meta {
           margin: 0 0 18px;
           color: #374151;
           font-size: 14px;
           line-height: 1.5;
         }
+
         table {
           width: 100%;
           border-collapse: collapse;
           margin-top: 12px;
         }
+
         th, td {
           border: 1px solid #d1d5db;
           padding: 8px;
           text-align: left;
           vertical-align: top;
         }
+
         th {
           background: #f3f4f6;
         }
+
+        .math-cell {
+          white-space: nowrap;
+        }
       </style>
+
+      <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['\\\\(', '\\\\)']],
+            displayMath: [['\\\\[', '\\\\]']]
+          }
+        };
+      </script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </head>
     <body>
-      <h1>${moduleTitle}</h1>
+      <h1>${escapeHtml(moduleTitle)}</h1>
       <div class="meta">
-        Poziom trudności: <strong>${modeLabel}</strong><br>
+        Poziom trudności: <strong>${escapeHtml(modeLabel)}</strong><br>
         Tryb czasu: <strong>${state.noTimeMode ? 'bez limitu czasu' : formatTime(TOTAL_TIME)}</strong>
       </div>
 
@@ -913,8 +990,17 @@ function exportPDF() {
       </table>
 
       <script>
-        window.print();
-      <\/script>
+        window.addEventListener('load', async () => {
+          try {
+            if (window.MathJax?.typesetPromise) {
+              await MathJax.typesetPromise();
+            }
+          } finally {
+            window.focus();
+            window.print();
+          }
+        });
+      </script>
     </body>
     </html>
   `);
