@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Po Prostu Matma — Notatki</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon/favicon.ico">
+    <link rel="stylesheet" href="./notesCSS.css">
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <div class="logo"><img src="../assets/favicon/android-chrome-512x512.png" alt=""></div>
+          <div>
+            <h1>Notatki PDF</h1>
+            <p>Wybierz dział i otwórz materiał w podglądzie.</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <a class="secondary-btn" href="../index.html" style="text-decoration:none; display:inline-flex; align-items:center;">
+            ← Powrót
+          </a>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="panel">
+          <div class="notes-layout">
+            <aside class="notes-sidebar" id="notesSidebar"></aside>
+
+            <section class="notes-viewer">
+              <div class="viewer-top">
+                <h2 class="viewer-title" id="viewerTitle">Wybierz notatkę</h2>
+                <div class="viewer-actions">
+                  <a class="secondary-btn" id="openNewTabBtn" href="#" target="_blank" rel="noopener" style="text-decoration:none; display:inline-flex; align-items:center;">
+                    Otwórz w nowej karcie
+                  </a>
+                  <a class="secondary-btn" id="downloadBtn" href="#" download style="text-decoration:none; display:inline-flex; align-items:center;">
+                    Pobierz PDF
+                  </a>
+                </div>
+              </div>
+
+              <iframe class="pdf-frame" id="pdfViewer" title="Podgląd PDF"></iframe>
+              <div class="notes-empty" id="notesEmpty">
+                Kliknij pozycję z listy po lewej, aby wyświetlić PDF tutaj.
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./notesScript.js"> </script>
+</body>
+</html>

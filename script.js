@@ -65,8 +65,12 @@ const trainerConfig = {
     subtitle: 'Działania na ułamkach zwykłych, niewłaściwych i mieszanych.'
   },
   equations: {
-    title: 'Trener równań',
-    subtitle: 'Rozwiązuj proste równania z jedną niewiadomą x.'
+    title: 'Trener równań I',
+    subtitle: 'Proste równania z jedną niewiadomą x.'
+  },
+  equations2: {
+    title: 'Trener równań II',
+    subtitle: 'Równania z liczbami całkowitymi i ułamkami.'
   }
 };
 
@@ -114,6 +118,15 @@ function randInt(min, max) {
 
 function pick(arr) {
   return arr[randInt(0, arr.length - 1)];
+}
+
+function usesFractionAnswers() {
+  return state.selectedTrainer === 'fractions' || state.selectedTrainer === 'equations2';
+}
+
+function eqFractionTex(fr) {
+  const tex = fractionToTex(fr, 'mixed');
+  return tex.startsWith('-') ? `(${tex})` : tex;
 }
 
 function gcd(a, b) {
@@ -454,49 +467,49 @@ function eqTerm(n) {
   return n < 0 ? `(${n})` : `${n}`;
 }
 
-function makeEquationQuestion(level) {
-  const pattern = pick(['add', 'sub', 'mul', 'div', 'mulAdd', 'mulSub']);
+function makeEquationQuestionFractions(level) {
+  const answerStyle =
+    level <= 2
+      ? 'proper'
+      : level <= 4
+        ? pick(['proper', 'improper'])
+        : pick(['proper', 'improper', 'mixed']);
 
+  const makeOperand = () => makeRandomFraction(answerStyle, randInt(2, 12));
+  const x = makeRandomFraction(answerStyle, randInt(2, 12));
+
+  const pattern = pick(['addRight', 'addLeft', 'subRight', 'subLeft', 'mul', 'div']);
   let expr = '';
-  let answer = 0;
 
-  if (pattern === 'add') {
-    const xValue = randInt(-12, 12) || 5;
-    const a = randInt(1, 20);
-    expr = `x + ${eqTerm(a)} = ${xValue + a}`;
-    answer = xValue;
-  } else if (pattern === 'sub') {
-    const xValue = randInt(-12, 12) || 5;
-    const a = randInt(1, 20);
-    expr = `x - ${eqTerm(a)} = ${xValue - a}`;
-    answer = xValue;
+  if (pattern === 'addRight') {
+    const a = makeOperand();
+    const rhs = addFractions(x, a);
+    expr = `x + ${eqFractionTex(a)} = ${eqFractionTex(rhs)}`;
+  } else if (pattern === 'addLeft') {
+    const a = makeOperand();
+    const rhs = addFractions(a, x);
+    expr = `${eqFractionTex(a)} + x = ${eqFractionTex(rhs)}`;
+  } else if (pattern === 'subRight') {
+    const a = makeOperand();
+    const rhs = subFractions(x, a);
+    expr = `x - ${eqFractionTex(a)} = ${eqFractionTex(rhs)}`;
+  } else if (pattern === 'subLeft') {
+    const a = makeOperand();
+    const rhs = subFractions(a, x);
+    expr = `${eqFractionTex(a)} - x = ${eqFractionTex(rhs)}`;
   } else if (pattern === 'mul') {
-    const xValue = randInt(-12, 12) || 5;
-    const a = randInt(2, 12);
-    expr = `${a}x = ${a * xValue}`;
-    answer = xValue;
-  } else if (pattern === 'div') {
-    const rhs = randInt(-12, 12) || 4;
-    const a = randInt(2, 12);
-    expr = `x ÷ ${a} = ${rhs}`;
-    answer = rhs * a;
-  } else if (pattern === 'mulAdd') {
-    const xValue = randInt(-12, 12) || 5;
-    const a = randInt(2, 9);
-    const b = randInt(-10, 10);
-    expr = `${a}x + ${eqTerm(b)} = ${a * xValue + b}`;
-    answer = xValue;
+    const k = makeOperand();
+    const rhs = mulFractions(x, k);
+    expr = `${eqFractionTex(k)}x = ${eqFractionTex(rhs)}`;
   } else {
-    const xValue = randInt(-12, 12) || 5;
-    const a = randInt(2, 9);
-    const b = randInt(-10, 10);
-    expr = `${a}x - ${eqTerm(b)} = ${a * xValue - b}`;
-    answer = xValue;
+    const k = makeOperand();
+    const rhs = divFractions(x, k);
+    expr = `x \\div ${eqFractionTex(k)} = ${eqFractionTex(rhs)}`;
   }
 
   return {
     expr: `\\(${expr}\\)`,
-    answer
+    answer: x
   };
 }
 
@@ -563,6 +576,10 @@ function generateQuestion() {
     q = makeFractionQuestion(level);
     els.answerInput.placeholder = 'Np. 3/4, 1 1/2, -2/3';
     els.answerInput.inputMode = 'text';
+  } else if (state.selectedTrainer === 'equations2') {
+    q = makeEquationQuestionFractions(level);
+    els.answerInput.placeholder = 'Np. 3/4, 1 1/2, -2/3';
+    els.answerInput.inputMode = 'text';
   } else if (state.selectedTrainer === 'equations') {
     q = makeEquationQuestion(level);
     els.answerInput.placeholder = 'Wpisz wartość x';
@@ -600,6 +617,8 @@ function generateQuestion() {
     els.difficultyText.textContent = getFractionDifficultyLabel(level);
   } else if (state.selectedTrainer === 'equations') {
     els.difficultyText.textContent = getEquationDifficultyLabel(level);
+  } else if (state.selectedTrainer === 'equations2') {
+    els.difficultyText.textContent = getEquationDifficultyLabel(level) + ' — ułamki';
   } else {
     els.difficultyText.textContent = getDifficultyLabel(level);
   }
@@ -684,7 +703,7 @@ function registerAnswer(raw, skipped = false) {
   let userAnswerText = skipped ? 'Pominięte' : raw;
   let correctAnswerText = String(correct);
 
-  if (state.selectedTrainer === 'fractions') {
+  if (usesFractionAnswers()) {
     userValue = skipped ? null : parseFractionInput(raw);
     isCorrect = !skipped && compareFractions(userValue, correct);
 
@@ -732,13 +751,19 @@ function typesetMath(scope) {
 }
 
 function answerToTex(value) {
-  if (state.selectedTrainer === 'fractions') {
-    const fr = parseFractionInput(value);
-    if (!fr) return value;
-    return `\\(${fractionToTex(fr, 'mixed')}\\)`;
+  const text = String(value ?? '').trim();
+
+  if (!text) return '';
+  if (text === 'Pominięte') return 'Pominięte';
+
+  if (usesFractionAnswers()) {
+    const fr = parseFractionInput(text);
+    if (fr) {
+      return `\\(${fractionToTex(fr, 'mixed')}\\)`;
+    }
   }
 
-  return `\\(${value}\\)`;
+  return `\\(${text}\\)`;
 }
 
 function renderResults() {
@@ -814,7 +839,7 @@ function valueForPrint(value) {
   if (!text) return '';
   if (text === 'Pominięte') return text;
 
-  if (state.selectedTrainer === 'fractions') {
+  if (usesFractionAnswers()) {
     const fr = parseFractionInput(text);
     if (fr) {
       return ensureInlineMath(fractionToTex(fr, 'mixed'));
@@ -826,6 +851,12 @@ function valueForPrint(value) {
 
 document.querySelectorAll('.hub-card[data-trainer]').forEach(card => {
   card.addEventListener('click', () => openTrainer(card.dataset.trainer));
+});
+
+document.querySelectorAll('.hub-card[data-page="notes"]').forEach(card => {
+  card.addEventListener('click', () => {
+    window.location.href = './pages/notes.html';
+  });
 });
 
 els.backToHubBtn.addEventListener('click', () => {
