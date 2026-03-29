@@ -467,6 +467,43 @@ function eqTerm(n) {
   return n < 0 ? `(${n})` : `${n}`;
 }
 
+function makeEquationQuestion(level) {
+  const pattern = pick(['addRight', 'addLeft', 'subRight', 'subLeft', 'mul', 'div']);
+
+  const randomX = () => randInt(-12, 12) || 5;
+  const x = randomX();
+
+  let expr = '';
+  let answer = x;
+
+  if (pattern === 'addRight') {
+    const a = randInt(1, 20);
+    expr = `x + ${eqTerm(a)} = ${x + a}`;
+  } else if (pattern === 'addLeft') {
+    const a = randInt(1, 20);
+    expr = `${eqTerm(a)} + x = ${a + x}`;
+  } else if (pattern === 'subRight') {
+    const a = randInt(1, 20);
+    expr = `x - ${eqTerm(a)} = ${x - a}`;
+  } else if (pattern === 'subLeft') {
+    const a = randInt(1, 20);
+    expr = `${eqTerm(a)} - x = ${a - x}`;
+    answer = a - (a - x);
+  } else if (pattern === 'mul') {
+    const a = randInt(2, 12);
+    expr = `${a}x = ${a * x}`;
+  } else if (pattern === 'div') {
+    const a = randInt(2, 12);
+    expr = `x \\div ${a} = ${x}`;
+    answer = x * a;
+  }
+
+  return {
+    expr: `\\(${expr}\\)`,
+    answer
+  };
+}
+
 function makeEquationQuestionFractions(level) {
   const answerStyle =
     level <= 2
